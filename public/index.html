@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+  <title>URL Shortener</title>
+</head>
+<body>
+  <div class="container">
+    <h1>URL Shortener</h1>
+
+    <form id="shorten-form">
+      <div>
+        <label>Enter URL:</label>
+        <input type="url" id="url" required />
+      </div>
+
+      <div>
+        <label>Enter Short Code (optional):</label>
+        <input type="text" id="shortCode" />
+      </div>
+
+      <button type="submit">Shorten</button>
+    </form>
+
+    <h2>Saved Links</h2>
+    <ul id="links-list">
+      <!-- Shortened links will appear here -->
+    </ul>
+  </div>
+
+  <script>
+    const form = document.getElementById("shorten-form");
+
+    // Handle form submission
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const url = document.getElementById("url").value;
+      const shortCode = document.getElementById("shortCode").value;
+
+      try {
+        const response = await fetch("/shorten", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url, shortCode })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          alert(`Shortened URL created: ${data.shortCode}`);
+          document.getElementById("url").value = "";
+          document.getElementById("shortCode").value = "";
+          fetchShortenedURL(); // Update the list
+        } else {
+          const text = await response.text();
+          alert(`Error: ${text}`);
+        }
+      } catch (err) {
+        console.error("Error submitting form:", err);
+        alert("Something went wrong while submitting the form.");
+      }
+    });
+
+    // Fetch and display all saved links
+    async function fetchShortenedURL() {
+      try {
+        const response = await fetch("/links");
+        if (!response.ok) throw new Error("Failed to fetch links");
+
+        const links = await response.json();
+        const list = document.getElementById("links-list");
+        list.innerHTML = ""; // Clear old items
+
+        for (const shortCode in links) {
+          const li = document.createElement("li");
+          li.innerHTML = `<a href="${links[shortCode]}" target="_blank">${shortCode}</a> → ${links[shortCode]}`;
+          list.appendChild(li);
+        }
+      } catch (err) {
+        console.error("Error fetching links:", err);
+      }
+    }
+
+    // Initial load
+    fetchShortenedURL();
+  </script>
+</body>
+</html>
